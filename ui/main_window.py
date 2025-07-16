@@ -70,7 +70,7 @@ class MainWindow(QMainWindow):
         self.image_layout = QHBoxLayout()
         self.layout.addLayout(self.image_layout)
         
-        self.select_image_button = QPushButton("Select Image")
+        self.select_image_button = QPushButton("Select Image (or Paste above)")
         self.select_image_button.clicked.connect(self.select_image)
         self.image_layout.addWidget(self.select_image_button)
         
@@ -224,9 +224,8 @@ class MainWindow(QMainWindow):
     def eventFilter(self, obj, event):
         """Handle paste events for image pasting with Ctrl+V"""
         if obj == self.input_text and event.type() == QEvent.Type.KeyPress:
-            key_event = QKeyEvent(event)
-            if key_event.modifiers() == Qt.KeyboardModifier.ControlModifier and \
-               key_event.key() == Qt.Key.Key_V:
+            if event.modifiers() == Qt.KeyboardModifier.ControlModifier and \
+               event.key() == Qt.Key.Key_V:
                 # Handle image paste
                 clipboard = QApplication.clipboard()
                 if clipboard.mimeData().hasImage():

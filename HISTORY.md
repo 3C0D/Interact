@@ -49,6 +49,12 @@
   - Création d'un nouveau `README.md` avec une brève description du projet et un lien vers `HISTORY.md`.
   - Mise à jour des règles du projet dans `.trae/rules/project_rules.md` pour inclure les directives sur l'utilisation du dossier `Windows_and_Linux` et la gestion de l'historique.
 
+### 2024-07-30 - Correction de bug
+- **Bug corrigé** : Résolution du `TypeError` lors du collage d'une image dans la zone de prompt, causé par une mauvaise construction de `QKeyEvent` dans `ui/main_window.py`.
+
+### 2024-07-30 - Amélioration 3
+- **Amélioration UI** : Le texte du bouton "Select Image" a été modifié en "Select Image (or Paste above)" pour indiquer la possibilité de coller des images directement dans la zone de prompt.
+
 ## Notes
 Ce document sera mis à jour au fur et à mesure du développement du projet.
 
