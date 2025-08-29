@@ -1,12 +1,10 @@
 import json
 import os
 
-import json
 from PyQt6.QtWidgets import QMainWindow, QVBoxLayout, QWidget, QTextEdit, QPushButton, QHBoxLayout, QComboBox, QFileDialog, QLabel, QApplication
-from PyQt6.QtCore import Qt, QObject, QEvent
-from PyQt6.QtGui import QPixmap, QImage, QKeyEvent
+from PyQt6.QtCore import Qt, QEvent
+from PyQt6.QtGui import QPixmap
 import base64
-import os
 
 from ia_integration.gemini_integration import GeminiIntegration
 
@@ -27,15 +25,15 @@ class MainWindow(QMainWindow):
             return
 
         # Initialize gemini_client here so model_options are available for setup_ui
-        default_model_name = self._load_default_model_name()
+        default_model_name = self._load_default_model_name() or "gemini-2.0-flash-lite-preview-02-05"
         self.gemini_client = GeminiIntegration(self.api_key, default_model_name)
         
         # Create central widget and layout
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
         
-        self.layout = QVBoxLayout()
-        self.central_widget.setLayout(self.layout)
+        self.main_layout = QVBoxLayout()
+        self.central_widget.setLayout(self.main_layout)
         
         self.chat_history = [] # Initialize chat history
         self.current_image_path = None
@@ -47,8 +45,9 @@ class MainWindow(QMainWindow):
         if os.path.exists(config_path):
             with open(config_path, 'r') as f:
                 config = json.load(f)
-                return config.get('providers', {}).get('Gemini (Recommended)', {}).get('api_key')
-        return None
+                api_key = config.get('providers', {}).get('Gemini (Recommended)', {}).get('api_key')
+                return api_key if api_key else ""
+        return ""
 
     def _load_default_model_name(self):
         config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'config.json')
@@ -64,11 +63,11 @@ class MainWindow(QMainWindow):
         self.input_text = QTextEdit()
         self.input_text.setPlaceholderText("Enter your prompt here...")
         self.input_text.installEventFilter(self)
-        self.layout.addWidget(self.input_text)
+        self.main_layout.addWidget(self.input_text)
 
         # Image selection
         self.image_layout = QHBoxLayout()
-        self.layout.addLayout(self.image_layout)
+        self.main_layout.addLayout(self.image_layout)
         
         self.select_image_button = QPushButton("Select Image (or Paste above)")
         self.select_image_button.clicked.connect(self.select_image)
@@ -87,7 +86,7 @@ class MainWindow(QMainWindow):
         self.image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.image_label.setScaledContents(False)
         self.image_label.setVisible(False)
-        self.layout.addWidget(self.image_label)
+        self.main_layout.addWidget(self.image_label)
 
         # Dropdown for model selection
         self.model_dropdown = QComboBox()
@@ -101,11 +100,11 @@ class MainWindow(QMainWindow):
             if default_index != -1:
                 self.model_dropdown.setCurrentIndex(default_index)
         self.model_dropdown.currentIndexChanged.connect(self.save_model_selection)
-        self.layout.addWidget(self.model_dropdown)
+        self.main_layout.addWidget(self.model_dropdown)
 
         # Buttons layout
         self.buttons_layout = QHBoxLayout()
-        self.layout.addLayout(self.buttons_layout)
+        self.main_layout.addLayout(self.buttons_layout)
 
         # Send button
         self.send_button = QPushButton("Send")
@@ -116,59 +115,58 @@ class MainWindow(QMainWindow):
         self.output_text = QTextEdit()
         self.output_text.setReadOnly(True)
         self.output_text.setPlaceholderText("AI response will appear here...")
-        self.layout.addWidget(self.output_text)
+        self.main_layout.addWidget(self.output_text)
 
     def send_prompt(self):
         prompt = self.input_text.toPlainText()
-        
+
         # Require either text or image or both
         if not prompt and not self.current_image_base64:
             self.output_text.setText("Please enter a prompt or select an image.")
             return
 
-        selected_model = self.model_dropdown.currentData()
+        selected_model = self.model_dropdown.currentData() or "gemini-2.0-flash-lite-preview-02-05"
         if not self.gemini_client or self.gemini_client.model_name != selected_model:
             self.gemini_client = GeminiIntegration(self.api_key, selected_model)
 
         self.output_text.setText("Generating response...")
-        
-        # Prepare the full prompt with image
-        full_prompt_content = [prompt] if prompt else []
-        if self.current_image_base64:
-            full_prompt_content.append({"mime_type": "image/jpeg", "data": self.current_image_base64})
-            # Try to detect actual MIME type based on extension
-            if self.current_image_path:
-                ext = self.current_image_path.lower().split('.')[-1]
-                mime_types = {
-                    'jpg': 'image/jpeg',
-                    'jpeg': 'image/jpeg',
-                    'png': 'image/png',
-                    'gif': 'image/gif',
-                    'bmp': 'image/bmp'
-                }
-                mime_type = mime_types.get(ext, 'image/jpeg')
-                full_prompt_content.append({"mime_type": mime_type, "data": self.current_image_base64})
 
-        # Add user prompt with image to chat history
-        user_content_parts = []
+        # Determine MIME type once
+        mime_type = "image/jpeg"
+        if self.current_image_path:
+            ext = self.current_image_path.lower().split('.')[-1]
+            mime_types = {
+                'jpg': 'image/jpeg', 'jpeg': 'image/jpeg',
+                'png': 'image/png', 'gif': 'image/gif', 'bmp': 'image/bmp'
+            }
+            mime_type = mime_types.get(ext, 'image/jpeg')
+
+        # Prepare the full prompt content
+        full_prompt_content = []
         if prompt:
-            user_content_parts.append({"text": prompt})
+            full_prompt_content.append(prompt)
         if self.current_image_base64:
-            mime_type = "image/jpeg"
-            if self.current_image_path:
-                ext = self.current_image_path.lower().split('.')[-1]
-                mime_types = {
-                    'jpg': 'image/jpeg', 'jpeg': 'image/jpeg', 
-                    'png': 'image/png', 'gif': 'image/gif', 'bmp': 'image/bmp'
-                }
-                mime_type = mime_types.get(ext, 'image/jpeg')
-            user_content_parts.append({"inline_data": {"mime_type": mime_type, "data": self.current_image_base64}})
-        
-        self.chat_history.append({"role": "user", "parts": user_content_parts})
+            image_dict = {"mime_type": mime_type, "data": self.current_image_base64}
+            full_prompt_content.append(image_dict)
 
+        # Add user message to chat history
+        user_parts = []
+        if prompt:
+            user_parts.append({"text": prompt})
+        if self.current_image_base64:
+            user_parts.append({
+                "inline_data": {
+                    "mime_type": mime_type,
+                    "data": self.current_image_base64
+                }
+            })
+
+        self.chat_history.append({"role": "user", "parts": user_parts})
+
+        # Generate response
         response = self.gemini_client.generate_content(full_prompt_content, chat_history=self.chat_history)
         self.output_text.setText(response)
-        
+
         # Add AI response to chat history
         self.chat_history.append({"role": "model", "parts": [{"text": response}]})
 
@@ -228,14 +226,15 @@ class MainWindow(QMainWindow):
                event.key() == Qt.Key.Key_V:
                 # Handle image paste
                 clipboard = QApplication.clipboard()
-                if clipboard.mimeData().hasImage():
-                    pixmap = clipboard.pixmap()
-                    if not pixmap.isNull():
+                mime_data = clipboard.mimeData() if clipboard else None
+                if mime_data and mime_data.hasImage():
+                    pixmap = clipboard.pixmap() if clipboard else None
+                    if pixmap and not pixmap.isNull():
                         # Convert QPixmap to QImage and save temporarily
                         image = pixmap.toImage()
                         temp_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'temp_clipboard.jpg')
                         image.save(temp_path, 'JPG')
-                        
+
                         # Load and set the image
                         self.current_image_path = temp_path
                         self.current_image_base64 = self._encode_image_to_base64(temp_path)
@@ -243,7 +242,7 @@ class MainWindow(QMainWindow):
                         self.clear_image_button.setEnabled(True)
                         self.clear_image_button.setVisible(True)
                         self.image_label.setVisible(True)
-                        
+
                         return True  # Event handled
                 # If not image, let default paste handler process it
                 

@@ -9,7 +9,7 @@ class GeminiIntegration:
     Class to handle integration with Gemini API
     """
 
-    def __init__(self, api_key: str, model_name: str = "gemma-3-27b"):
+    def __init__(self, api_key: str, model_name: str = "gemini-2.0-flash-lite-preview-02-05"):
         self.api_key = api_key
         self.model_name = model_name
         genai.configure(api_key=self.api_key)
@@ -22,23 +22,11 @@ class GeminiIntegration:
             "gemini-2.5-flash": {
                 "rpm": 500,
                 "rpd": 1500,
-            },  # Example: 500 RPM, 1500 RPD (free tier, check actual limits)
-            "gemma-3-27b": {
-                "rpm": 10,
-                "rpd": 50,
-            },  # Modèle Gemma 3 (27B) - 10 RPM, 50 RPD
-            "gemma-3-12b": {
-                "rpm": 15,
-                "rpd": 75,
-            },  # Modèle Gemma 3 (12B) - 15 RPM, 75 RPD
-            "gemma-3-4b": {
-                "rpm": 20,
-                "rpd": 100,
-            },  # Modèle Gemma 3 (4B) - 20 RPM, 100 RPD
-            "gemini-2.0-flash-lite-preview-02-05": {"rpm": 30},  # uses per minute
-            "gemini-2.0-flash": {"rpm": 15},
-            "gemini-2.0-flash-thinking-exp-01-21": {"rpm": 10},
-            "gemini-2.0-pro-exp-02-05": {"rpm": 2},
+            },
+            "gemini-2.0-flash-lite-preview-02-05": {
+                "rpm": 1000,
+                "rpd": 10000,
+            }
         }
 
     def generate_content(self, prompt, chat_history=None):
@@ -63,7 +51,7 @@ class GeminiIntegration:
                             image = Image.open(io.BytesIO(image_data))
                             contents.append(image)
                         except Exception:
-                            contents.append(f"Error: Unable to process image")
+                            contents.append("Error: Unable to process image")
             else:
                 contents.append(str(prompt))
 
