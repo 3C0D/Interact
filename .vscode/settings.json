@@ -1,26 +1,22 @@
 {
     "python.analysis.autoImportCompletions": true,
     "python.analysis.diagnosticMode": "workspace",
-    "python.analysis.include": [
-        "${workspaceFolder}/**"
-    ],
+    // "python.analysis.include": [
+    //     "${workspaceFolder}/*.py"
+    // ],
     "python.analysis.exclude": [
-        "**/node_modules",
-        "**/__pycache__",
-        "**/.mypy_cache",
-        "**/build",
-        "**/dist",
-        ".git",
-        ".vscode",
+        "**/__pycache__/**",
+        "**/venv/**",
+        ".git/**",
+        ".vscode/**",
         "**/*.pyc"
     ],
     "editor.wordWrap": "on",
     "python.defaultInterpreterPath": "${workspaceFolder}/venv/Scripts/python.exe",
-    "python.analysis.extraPaths": [
-        "${workspaceFolder}/venv/Lib/site-packages"
-    ],
-    "python.analysis.autoSearchPaths": true,
+    "python.analysis.autoSearchPaths": false,
     "python.analysis.typeCheckingMode": "basic",
     "python.terminal.activateEnvironment": true,
-    "python.terminal.activateEnvInCurrentTerminal": true
+    "python.terminal.activateEnvInCurrentTerminal": true,
+    "python.analysis.useLibraryCodeForTypes": false,
+    "python.analysis.logLevel": "Warning"
 }

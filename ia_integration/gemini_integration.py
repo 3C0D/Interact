@@ -12,8 +12,8 @@ class GeminiIntegration:
     def __init__(self, api_key: str, model_name: str = "gemini-2.0-flash-lite-preview-02-05"):
         self.api_key = api_key
         self.model_name = model_name
-        genai.configure(api_key=self.api_key)
-        self.model = genai.GenerativeModel(self.model_name)
+        genai.configure(api_key=self.api_key)  # type: ignore
+        self.model = genai.GenerativeModel(self.model_name)  # type: ignore
         self.model_options = {
             "gemini-2.5-pro-exp-03-25": {
                 "rpm": 5,
